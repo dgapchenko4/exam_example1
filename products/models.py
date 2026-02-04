@@ -7,6 +7,7 @@ class Category(models.Model):
     """Категория товара"""
     name = models.CharField(max_length=100, unique=True, verbose_name="Название категории")
     description = models.TextField(blank=True, default='', verbose_name='Описание')
+    slug = models.SlugField(max_length=200, unique=True, blank=True)
 
     class Meta:
         verbose_name = "Категория"
