@@ -59,10 +59,18 @@ def product_list(request):
         supplier_filter = ''
         sort_by = 'name'
 
+    # Фильтр по категории (для всех пользователей)
+    category_filter = request.GET.get('category', '')
+    if category_filter:
+        products = products.filter(category__id=category_filter)
+
     # Пагинация
     paginator = Paginator(products, 10)  # 10 товаров на страницу
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
+    # Получаем ВСЕ категории для фильтра
+    categories = Category.objects.all()
 
     context = {
         'page_obj': page_obj,
@@ -71,6 +79,8 @@ def product_list(request):
         'search_query': search_query,
         'supplier_filter': supplier_filter,
         'sort_by': sort_by,
+        'categories': categories,  # <- ДОБАВЬТЕ ЭТУ СТРОКУ!
+        'selected_category': category_filter,  # Для сохранения выбора в фильтре
     }
 
     return render(request, 'products/product_list.html', context)

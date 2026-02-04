@@ -18,12 +18,12 @@
                             <label class="form-label">Категория</label>
                             <select name="category" class="form-select">
                                 <option value="">Все категории</option>
-                                {% for category in categories %}
-                                    <option value="{{ category.id }}" 
-                                            {% if request.GET.category == category.id|stringformat:"i" %}selected{% endif %}>
-                                        {{ category.name }}
-                                    </option>
-                                {% endfor %}
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}" 
+                                            {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ category.name }}
+                                        </option>
+                                    {% endfor %}
                             </select>
                         </div>
                         <button type="submit" class="btn btn-primary">Применить</button>
