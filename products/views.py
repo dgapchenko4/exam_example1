@@ -9,21 +9,27 @@ from .forms import ProductForm
 
 def get_user_role(user):
     """Получение роли пользователя"""
+    if not user or not user.is_authenticated:
+        return 'guest'
     if user.is_superuser:
         return 'admin'
     if user.groups.filter(name='Менеджеры').exists():
         return 'manager'
     if user.groups.filter(name='Клиенты').exists():
         return 'client'
-    return 'guest'
+    return 'user'
 
-# /products?search="test user"
 def product_list(request):
     """Список товаров с учетом роли пользователя"""
     user_role = get_user_role(request.user) if request.user.is_authenticated else 'guest'
 
     # Базовый queryset
     products = Product.objects.select_related('category', 'manufacturer', 'supplier', 'unit')
+
+    # Фильтр по категории
+    category_filter = request.GET.get('category', '')
+    if category_filter:
+        products = products.filter(category__id=category_filter)
 
     # Фильтры и поиск только для менеджеров и администраторов
     if user_role in ['manager', 'admin']:
@@ -34,8 +40,8 @@ def product_list(request):
                 Q(name__icontains=search_query) |
                 Q(description__icontains=search_query) |
                 Q(category__name__icontains=search_query) |
-                Q(manufacturer__name__icontains=search_query) |
-                Q(supplier__name__icontains=search_query)
+                Q(manufacturer__name__icontains=search_query) |  # ИСПРАВЛЕНО
+                Q(supplier__name__icontains=search_query)        # ИСПРАВЛЕНО
             )
 
         # Фильтр по поставщику
@@ -59,18 +65,13 @@ def product_list(request):
         supplier_filter = ''
         sort_by = 'name'
 
-    # Фильтр по категории (для всех пользователей)
-    category_filter = request.GET.get('category', '')
-    if category_filter:
-        products = products.filter(category__id=category_filter)
-
-    # Пагинация
-    paginator = Paginator(products, 10)  # 10 товаров на страницу
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
     # Получаем ВСЕ категории для фильтра
     categories = Category.objects.all()
+
+    # Пагинация
+    paginator = Paginator(products, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     context = {
         'page_obj': page_obj,
@@ -79,12 +80,11 @@ def product_list(request):
         'search_query': search_query,
         'supplier_filter': supplier_filter,
         'sort_by': sort_by,
-        'categories': categories,  # <- ДОБАВЬТЕ ЭТУ СТРОКУ!
-        'selected_category': category_filter,  # Для сохранения выбора в фильтре
+        'categories': categories,
+        'selected_category': category_filter,
     }
 
     return render(request, 'products/product_list.html', context)
-
 
 @login_required
 def product_create(request):
